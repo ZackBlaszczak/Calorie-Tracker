@@ -1,0 +1,11 @@
+ _____________________            ________________________           _______________________
+|      CalorieTracker |          |       FoodItem        |         |           Meal         |
+|---------------------|          |-----------------------|         |-----------------------|
+| - meals: ArrayList |          | - name: String        |         | - date: LocalDate     |
+|---------------------|          | - calories: int       |         |-----------------------|
+| + addMeal(Meal)    |          |-----------------------|         | + Meal(name: String,  |
+| + sortMeals()       |          | + getName(): String   |         |       calories: int,   |
+| + loadMealsFromFile|----------| + setName(String)      |         |       date: LocalDate)|
+| + saveMealsToFile   |          | + getCalories(): int  |         | + getDate(): LocalDate|
+|---------------------|          | + setCalories(int)    |         | + toString(): String  |
+|_____________________|          |_______________________|         |_______________________|
