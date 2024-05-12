@@ -1,16 +1,28 @@
 import java.io.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Stack;
 
 public class CalorieTracker {
     private ArrayList<Meal> meals;
+    private Stack<Meal> mealStack;
+    private HashMap<String, Integer> calorieMap;
 
     public CalorieTracker() {
         meals = new ArrayList<>();
+        mealStack = new Stack<>();
+        calorieMap = new HashMap<>();
     }
 
     public void addMeal(Meal meal) {
         meals.add(meal);
+        mealStack.push(meal);
+        calorieMap.put(meal.getName(), meal.getCalories());
+    }
+
+    public ArrayList<Meal> getMeals() {
+        return meals;
     }
 
     public void sortMeals() {
@@ -30,43 +42,50 @@ public class CalorieTracker {
         int n1 = mid - left + 1;
         int n2 = right - mid;
 
-        Meal[] leftArray = new Meal[n1];
-        Meal[] rightArray = new Meal[n2];
+        ArrayList<Meal> leftArray = new ArrayList<>(n1);
+        ArrayList<Meal> rightArray = new ArrayList<>(n2);
 
         for (int i = 0; i < n1; ++i) {
-            leftArray[i] = meals.get(left + i);
+            leftArray.add(meals.get(left + i));
         }
         for (int j = 0; j < n2; ++j) {
-            rightArray[j] = meals.get(mid + 1 + j);
+            rightArray.add(meals.get(mid + 1 + j));
         }
-
 
         int i = 0, j = 0;
 
         int k = left;
 
         while (i < n1 && j < n2) {
-            if (leftArray[i].getCalories() <= rightArray[j].getCalories()) {
-                meals.set(k, leftArray[i]);
+            if (leftArray.get(i).getCalories() <= rightArray.get(j).getCalories()) {
+                meals.set(k, leftArray.get(i));
                 i++;
             } else {
-                meals.set(k, rightArray[j]);
+                meals.set(k, rightArray.get(j));
                 j++;
             }
             k++;
         }
 
         while (i < n1) {
-            meals.set(k, leftArray[i]);
+            meals.set(k, leftArray.get(i));
             i++;
             k++;
         }
 
         while (j < n2) {
-            meals.set(k, rightArray[j]);
+            meals.set(k, rightArray.get(j));
             j++;
             k++;
         }
+    }
+
+    public Stack<Meal> getMealStack() {
+        return mealStack;
+    }
+
+    public HashMap<String, Integer> getCalorieMap() {
+        return calorieMap;
     }
 
     public void saveMealsToFile(String filename) {
@@ -87,26 +106,12 @@ public class CalorieTracker {
                 String name = parts[0];
                 int calories = Integer.parseInt(parts[1]);
                 LocalDate date = LocalDate.parse(parts[2]);
-                Meal meal = new Meal(name, calories, date);
+                Meal meal = new Meal(name, calories);
                 addMeal(meal);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public void writeMealsToFile(String filename) {
-        try (FileWriter writer = new FileWriter(filename)) {
-            for (Meal meal : meals) {
-                writer.write(meal.toString() + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public ArrayList<Meal> getMeals() {
-        return meals;
     }
 
     public static void main(String[] args) {
@@ -120,7 +125,6 @@ public class CalorieTracker {
 
         CalorieTrackerGUI.launch(CalorieTrackerGUI.class, args);
     }
-
 }
 
 class FoodItem {
@@ -157,11 +161,6 @@ class Meal extends FoodItem {
         this.date = LocalDate.now();
     }
 
-    public Meal(String name, int calories, LocalDate date) {
-        super(name, calories);
-        this.date = date;
-    }
-
     public LocalDate getDate() {
         return date;
     }
@@ -175,4 +174,5 @@ class Meal extends FoodItem {
         return getName() + "," + getCalories() + "," + date.toString();
     }
 }
+
 
