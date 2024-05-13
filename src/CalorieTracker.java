@@ -8,17 +8,24 @@ public class CalorieTracker {
     private ArrayList<Meal> meals;
     private Stack<Meal> mealStack;
     private HashMap<String, Integer> calorieMap;
+    private MealSearchTree mealSearchTree;
 
     public CalorieTracker() {
         meals = new ArrayList<>();
         mealStack = new Stack<>();
         calorieMap = new HashMap<>();
+        mealSearchTree = new MealSearchTree();
     }
 
     public void addMeal(Meal meal) {
         meals.add(meal);
         mealStack.push(meal);
         calorieMap.put(meal.getName(), meal.getCalories());
+        mealSearchTree.insert(meal);
+    }
+
+    public Meal searchByName(String name) {
+        return mealSearchTree.search(name);
     }
 
     public ArrayList<Meal> getMeals() {
@@ -172,6 +179,60 @@ class Meal extends FoodItem {
     @Override
     public String toString() {
         return getName() + "," + getCalories() + "," + date.toString();
+    }
+}
+
+class TreeNode {
+    Meal meal;
+    TreeNode left;
+    TreeNode right;
+
+    public TreeNode(Meal meal) {
+        this.meal = meal;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+class MealSearchTree {
+    private TreeNode root;
+
+    public MealSearchTree() {
+        this.root = null;
+    }
+
+    public void insert(Meal meal) {
+        root = insertRecursive(root, meal);
+    }
+
+    private TreeNode insertRecursive(TreeNode root, Meal meal) {
+        if (root == null) {
+            return new TreeNode(meal);
+        }
+
+        if (meal.getName().compareTo(root.meal.getName()) < 0) {
+            root.left = insertRecursive(root.left, meal);
+        } else if (meal.getName().compareTo(root.meal.getName()) > 0) {
+            root.right = insertRecursive(root.right, meal);
+        }
+
+        return root;
+    }
+
+    public Meal search(String name) {
+        return searchRecursive(root, name);
+    }
+
+    private Meal searchRecursive(TreeNode root, String name) {
+        if (root == null || root.meal.getName().equals(name)) {
+            return (root != null) ? root.meal : null;
+        }
+
+        if (name.compareTo(root.meal.getName()) < 0) {
+            return searchRecursive(root.left, name);
+        } else {
+            return searchRecursive(root.right, name);
+        }
     }
 }
 
