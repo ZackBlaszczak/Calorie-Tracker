@@ -3,25 +3,44 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Stack;
+import java.net.Socket;
+import java.net.ServerSocket;
 
 public class CalorieTracker {
     private ArrayList<Meal> meals;
     private Stack<Meal> mealStack;
-    private HashMap<String, Integer> calorieMap;
+    private HashMap<LocalDate, Integer> dailyCalories;
     private MealSearchTree mealSearchTree;
+    private CalorieTrackerServer server;
 
     public CalorieTracker() {
         meals = new ArrayList<>();
         mealStack = new Stack<>();
-        calorieMap = new HashMap<>();
+        dailyCalories = new HashMap<>();
         mealSearchTree = new MealSearchTree();
+        server = new CalorieTrackerServer();
     }
 
     public void addMeal(Meal meal) {
         meals.add(meal);
         mealStack.push(meal);
-        calorieMap.put(meal.getName(), meal.getCalories());
+        dailyCalories.putIfAbsent(meal.getDate(), 0);
+        dailyCalories.put(meal.getDate(), dailyCalories.get(meal.getDate()) + meal.getCalories());
         mealSearchTree.insert(meal);
+    }
+
+    public int calculateTotalCalories(LocalDate date) {
+        return dailyCalories.getOrDefault(date, 0);
+    }
+
+    public int calculateTotalCaloriesForDay(LocalDate date) {
+        int totalCalories = 0;
+        for (Meal meal : meals) {
+            if (meal.getDate().equals(date)) {
+                totalCalories += meal.getCalories();
+            }
+        }
+        return totalCalories;
     }
 
     public Meal searchByName(String name) {
@@ -91,8 +110,8 @@ public class CalorieTracker {
         return mealStack;
     }
 
-    public HashMap<String, Integer> getCalorieMap() {
-        return calorieMap;
+    public HashMap<LocalDate, Integer> getDailyCalories() {
+        return dailyCalories;
     }
 
     public void saveMealsToFile(String filename) {
@@ -113,7 +132,7 @@ public class CalorieTracker {
                 String name = parts[0];
                 int calories = Integer.parseInt(parts[1]);
                 LocalDate date = LocalDate.parse(parts[2]);
-                Meal meal = new Meal(name, calories);
+                Meal meal = new Meal(name, calories, date);
                 addMeal(meal);
             }
         } catch (IOException e) {
@@ -129,6 +148,8 @@ public class CalorieTracker {
         tracker.loadMealsFromFile(inputFile);
         tracker.sortMeals();
         tracker.saveMealsToFile(outputFile);
+
+        new Thread(tracker.server).start();
 
         CalorieTrackerGUI.launch(CalorieTrackerGUI.class, args);
     }
@@ -163,9 +184,9 @@ class FoodItem {
 class Meal extends FoodItem {
     private LocalDate date;
 
-    public Meal(String name, int calories) {
+    public Meal(String name, int calories, LocalDate date) {
         super(name, calories);
-        this.date = LocalDate.now();
+        this.date = date;
     }
 
     public LocalDate getDate() {
@@ -235,5 +256,49 @@ class MealSearchTree {
         }
     }
 }
+
+class CalorieTrackerServer implements Runnable {
+    @Override
+    public void run() {
+        try (ServerSocket serverSocket = new ServerSocket(12345)) {
+            System.out.println("Server started. Waiting for clients...");
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                System.out.println("Client connected: " + clientSocket.getInetAddress().getHostAddress());
+
+                new Thread(new ClientHandler(clientSocket)).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static class ClientHandler implements Runnable {
+        private Socket clientSocket;
+
+        public ClientHandler(Socket clientSocket) {
+            this.clientSocket = clientSocket;
+        }
+
+        @Override
+        public void run() {
+            try (
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
+            ) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    System.out.println("Received from client: " + inputLine);
+                    out.println("Server received: " + inputLine);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+
+
 
 
